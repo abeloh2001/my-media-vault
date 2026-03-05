@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VaultPro | Secure & Stable</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .glass-nav { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border-bottom: 1px solid #e2e8f0; }
+        .type-card { transition: all 0.2s; cursor: pointer; border: 2px solid transparent; background: white; }
+        .type-card.active { border-color: #4f46e5; background: #eef2ff; transform: scale(1.05); }
+        .media-card { transition: all 0.3s ease; background: white; border-radius: 1.5rem; border: 1px solid #f1f5f9; overflow: hidden; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .player-overlay { position: fixed; inset: 0; background: white; z-index: 3000; display: none; }
+        .btn-action { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: #f1f5f9; color: #64748b; transition: 0.2s; }
+        .btn-action:hover { background: #4f46e5; color: white; }
+        .folder-chip { cursor: pointer; transition: all 0.2s; border: 1px solid #e2e8f0; font-size: 10px; font-weight: 700; white-space: nowrap; }
+        .folder-chip.active { background: #4f46e5; color: white; border-color: #4f46e5; box-shadow: 0 4px 12px rgba(79,70,229,0.2); }
+        #authScreen { display: flex; }
+        #appScreen { display: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        model-viewer { width: 100%; height: 100%; --poster-color: transparent; }
+    </style>
+</head>
+<body>
+
+    <div id="authScreen" class="fixed inset-0 bg-slate-50 flex items-center justify-center z-[5000] px-6">
+        <div class="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-sm text-center border border-slate-100">
+            <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-2xl">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <h2 class="text-xl font-bold mb-2">Vault Access</h2>
+            <p class="text-[10px] text-slate-400 mb-8 uppercase font-bold tracking-widest">Sila Login untuk melihat fail</p>
+            <input type="email" id="loginEmail" placeholder="Email" class="w-full p-4 bg-slate-50 rounded-2xl mb-3 outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm">
+            <input type="password" id="loginPass" placeholder="Password" class="w-full p-4 bg-slate-50 rounded-2xl mb-6 outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm">
+            <button id="loginBtn" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-xs uppercase shadow-lg shadow-indigo-200 active:scale-95 transition-all">Masuk</button>
+        </div>
+    </div>
+
+    <div id="appScreen">
+        <nav class="glass-nav sticky top-0 z-50 px-6 py-4">
+            <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-4 w-full md:w-auto justify-between">
+                    <h1 class="text-xl font-bold text-indigo-600 tracking-tight">VAULT<span class="text-slate-900">PRO</span></h1>
+                    <button onclick="logout()" class="text-[10px] font-bold text-rose-500 bg-rose-50 px-3 py-1 rounded-full md:hidden">KELUAR</button>
+                </div>
+                <div class="flex items-center gap-2 w-full md:w-auto">
+                    <div class="relative flex-1 md:w-64">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-[10px]"></i>
+                        <input type="text" id="searchInput" oninput="renderMedia()" placeholder="Cari fail..." class="w-full pl-9 pr-4 py-2 bg-slate-100 rounded-xl text-xs outline-none">
+                    </div>
+                    <button onclick="logout()" class="btn-action hidden md:flex" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></button>
+                </div>
+            </div>
+        </nav>
+
+        <main class="max-w-6xl mx-auto px-4 md:px-6 py-8">
+            <section class="mb-10 text-center">
+                <div class="flex justify-start md:justify-center gap-3 mb-6 overflow-x-auto pb-2 no-scrollbar">
+                    <div onclick="selectType('3d', this)" class="type-card p-4 rounded-2xl min-w-[80px] shadow-sm">
+                        <i class="fa-solid fa-cube text-indigo-500 text-xl"></i>
+                        <p class="text-[9px] font-bold mt-2 uppercase">3D</p>
+                    </div>
+                    <div onclick="selectType('image', this)" class="type-card p-4 rounded-2xl min-w-[80px] shadow-sm">
+                        <i class="fa-solid fa-image text-emerald-500 text-xl"></i>
+                        <p class="text-[9px] font-bold mt-2 uppercase">Imej</p>
+                    </div>
+                    <div onclick="selectType('video', this)" class="type-card p-4 rounded-2xl min-w-[80px] shadow-sm">
+                        <i class="fa-solid fa-clapperboard text-rose-500 text-xl"></i>
+                        <p class="text-[9px] font-bold mt-2 uppercase">Video</p>
+                    </div>
+                    <div onclick="selectType('audio', this)" class="type-card p-4 rounded-2xl min-w-[80px] shadow-sm">
+                        <i class="fa-solid fa-headphones text-amber-500 text-xl"></i>
+                        <p class="text-[9px] font-bold mt-2 uppercase">Audio</p>
+                    </div>
+                </div>
+
+                <div id="inputArea" class="max-w-3xl mx-auto bg-white p-5 rounded-[2.5rem] shadow-xl border border-slate-100 hidden animate-fade-in">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                        <input type="text" id="fileName" placeholder="Nama Fail" class="p-3 bg-slate-50 rounded-xl text-sm outline-none">
+                        <input type="number" id="fileSize" placeholder="Saiz (MB)" class="p-3 bg-slate-50 rounded-xl text-sm outline-none">
+                        <select id="folderSelect" class="p-3 bg-slate-50 rounded-xl text-sm outline-none font-bold text-slate-500"></select>
+                    </div>
+                    <div class="flex flex-col md:flex-row gap-3">
+                        <input type="text" id="fileUrl" placeholder="Tampal Link Dropbox..." class="flex-1 p-3 bg-slate-50 rounded-xl text-sm outline-none">
+                        <button id="addBtn" class="w-full md:w-auto bg-indigo-600 text-white px-10 py-3.5 rounded-xl font-bold text-xs uppercase shadow-lg shadow-indigo-200 active:scale-95 transition-all">Simpan</button>
+                    </div>
+                </div>
+            </section>
+
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+                <div id="folderList" class="flex gap-2 overflow-x-auto w-full md:w-auto pb-2 no-scrollbar"></div>
+                <div class="flex gap-2">
+                    <button onclick="createNewFolder()" class="btn-action bg-white border border-slate-200"><i class="fa-solid fa-folder-plus text-[10px]"></i></button>
+                    <select id="sortFilter" onchange="renderMedia()" class="bg-white px-4 py-2 rounded-full border border-slate-200 text-[10px] font-bold uppercase outline-none">
+                        <option value="date">Terbaharu</option>
+                        <option value="name">Nama A-Z</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="mediaGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+        </main>
+    </div>
+
+    <div id="modalUI" class="overlay" onclick="if(event.target==this) closeModal()">
+        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center relative shadow-2xl">
+            <div id="modalIcon" class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl"></div>
+            <h2 id="modalTitle" class="text-lg font-bold"></h2>
+            <p id="modalSub" class="text-[10px] text-slate-400 uppercase font-bold mt-1 mb-6"></p>
+            <textarea id="modalBox" readonly class="w-full h-24 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-[10px] mb-6 outline-none font-mono"></textarea>
+            <button id="modalActionBtn" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-xs uppercase shadow-lg">Tindakan</button>
+        </div>
+    </div>
+
+    <div id="playerUI" class="player-overlay">
+        <button onclick="closePlayer()" class="absolute top-6 left-6 z-[3100] bg-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+        <div id="playerContent" class="w-full h-full flex items-center justify-center p-6"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD6i4I3x2M8PbfBMz_jWaQja3WFDQOvEus",
+            authDomain: "mymediavault-af050.firebaseapp.com",
+            projectId: "mymediavault-af050",
+            storageBucket: "mymediavault-af050.firebasestorage.app",
+            appId: "1:364554672192:web:578874137d9c2a50cde7a5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        let allMedia = [], selectedType = '', currentFolder = 'Semua';
+        let folders = JSON.parse(localStorage.getItem('vault_folders')) || ['Utama', 'Kerja'];
+
+        // AUTHENTICATION
+        document.getElementById('loginBtn').onclick = () => {
+            const e = document.getElementById('loginEmail').value;
+            const p = document.getElementById('loginPass').value;
+            signInWithEmailAndPassword(auth, e, p).catch(err => alert("Gagal: " + err.message));
+        };
+        window.logout = () => signOut(auth);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('authScreen').style.display = 'none';
+                document.getElementById('appScreen').style.display = 'block';
+                startApp();
+            } else {
+                document.getElementById('authScreen').style.display = 'flex';
+                document.getElementById('appScreen').style.display = 'none';
+            }
+        });
+
+        function startApp() {
+            onSnapshot(query(collection(db, "media"), orderBy("created", "desc")), (snap) => {
+                allMedia = []; snap.forEach(d => allMedia.push({id: d.id, ...d.data()}));
+                renderMedia();
+            });
+            updateFolderUI();
+        }
+
+        // DROPBOX LINK FIX LOGIC
+        document.getElementById('addBtn').onclick = async () => {
+            const name = document.getElementById('fileName').value.trim();
+            let url = document.getElementById('fileUrl').value.trim();
+            const size = document.getElementById('fileSize').value || 0;
+            const folder = document.getElementById('folderSelect').value;
+
+            if (!name || !url || !selectedType) return alert("Sila isi semua maklumat!");
+
+            if (url.includes('dropbox.com')) {
+                url = url.replace('www.dropbox.com', 'dl.dropboxusercontent.com');
+                url = url.split('?')[0] + '?raw=1'; // Paksa format raw=1
+            }
+
+            await addDoc(collection(db, "media"), { name, url, type: selectedType, folder, size, created: Date.now() });
+            document.getElementById('fileUrl').value = ''; document.getElementById('fileName').value = '';
+            alert("Fail berjaya disimpan!");
+        };
+
+        // RENDERING
+        window.renderMedia = () => {
+            const grid = document.getElementById('mediaGrid');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const sort = document.getElementById('sortFilter').value;
+            
+            let filtered = allMedia.filter(m => (currentFolder === 'Semua' || m.folder === currentFolder) && m.name.toLowerCase().includes(search));
+            if(sort === 'name') filtered.sort((a,b) => a.name.localeCompare(b.name));
+
+            grid.innerHTML = '';
+            filtered.forEach(m => {
+                const icon = {'3d':'fa-cube','image':'fa-image','video':'fa-clapperboard','audio':'fa-headphones'}[m.type];
+                grid.innerHTML += `
+                    <div class="media-card animate-fade-in group">
+                        <div class="h-32 bg-slate-50 flex items-center justify-center relative overflow-hidden">
+                            ${m.type === 'image' ? `<img src="${m.url}" class="w-full h-full object-cover">` : `<i class="fa-solid ${icon} text-indigo-500/20 text-4xl"></i>`}
+                        </div>
+                        <div class="p-4">
+                            <h3 class="text-[10px] font-bold truncate uppercase tracking-tight">${m.name}</h3>
+                            <p class="text-[8px] text-slate-400 mt-1 font-bold uppercase">${m.folder} • ${m.size}MB</p>
+                            <div class="flex gap-2 mt-4">
+                                <button onclick="openPlayer('${m.id}')" class="btn-action"><i class="fa-solid fa-eye text-[10px]"></i></button>
+                                <button onclick="showShare('${m.id}')" class="btn-action"><i class="fa-solid fa-link text-[10px]"></i></button>
+                                <button onclick="deleteMedia('${m.id}')" class="btn-action hover:bg-rose-500 hover:text-white ml-auto"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+        };
+
+        window.selectType = (type, el) => {
+            selectedType = type;
+            document.querySelectorAll('.type-card').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('inputArea').classList.remove('hidden');
+        };
+
+        window.openPlayer = (id) => {
+            const m = allMedia.find(x => x.id === id);
+            const content = document.getElementById('playerContent');
+            document.getElementById('playerUI').style.display = 'flex';
+            if (m.type === 'image') content.innerHTML = `<img src="${m.url}" class="max-w-full max-h-full object-contain rounded-xl shadow-2xl">`;
+            else if (m.type === '3d') content.innerHTML = `<model-viewer src="${m.url}" auto-rotate camera-controls shadow-intensity="1"></model-viewer>`;
+            else if (m.type === 'video') content.innerHTML = `<video src="${m.url}" controls autoplay class="max-w-full max-h-full rounded-xl"></video>`;
+            else if (m.type === 'audio') content.innerHTML = `<div class="bg-white p-8 rounded-3xl shadow-xl"><audio src="${m.url}" controls autoplay></audio></div>`;
+        };
+
+        window.showShare = (id) => {
+            const embed = `<iframe src="${window.location.href.split('?')[0]}?id=${id}" width="100%" height="500px" frameborder="0"></iframe>`;
+            openModal("Embed Kod", "Klik butang untuk salin", embed, "Salin Kod", () => { navigator.clipboard.writeText(embed); alert("Kod disalin!"); });
+        };
+
+        function openModal(title, sub, content, btnText, action) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalSub').innerText = sub;
+            document.getElementById('modalBox').value = content;
+            const btn = document.getElementById('modalActionBtn');
+            btn.innerText = btnText; btn.onclick = action;
+            document.getElementById('modalUI').style.display = 'flex';
+        }
+
+        window.closePlayer = () => { document.getElementById('playerContent').innerHTML = ''; document.getElementById('playerUI').style.display = 'none'; };
+        window.closeModal = () => document.getElementById('modalUI').style.display = 'none';
+        window.deleteMedia = async (id) => { if(confirm("Padam fail ini?")) await deleteDoc(doc(db, "media", id)); };
+        
+        window.createNewFolder = () => {
+            const n = prompt("Nama Folder:");
+            if(n && !folders.includes(n)) { folders.push(n); localStorage.setItem('vault_folders', JSON.stringify(folders)); updateFolderUI(); }
+        };
+
+        function updateFolderUI() {
+            const list = document.getElementById('folderList');
+            const select = document.getElementById('folderSelect');
+            list.innerHTML = `<button onclick="filterFolder('Semua')" class="folder-chip px-5 py-2 rounded-full ${currentFolder === 'Semua' ? 'active' : 'bg-white'}">SEMUA</button>`;
+            select.innerHTML = '';
+            folders.forEach(f => {
+                list.innerHTML += `<button onclick="filterFolder('${f}')" class="folder-chip px-5 py-2 rounded-full ${currentFolder === f ? 'active' : 'bg-white'}">${f.toUpperCase()}</button>`;
+                select.innerHTML += `<option value="${f}">${f}</option>`;
+            });
+        }
+        window.filterFolder = (f) => { currentFolder = f; updateFolderUI(); renderMedia(); };
+    </script>
+</body>
+</html>
